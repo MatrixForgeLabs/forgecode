@@ -244,3 +244,63 @@ impl<R: UserRepository, C: Cache, L: Logger> BadUserService<R, C, L> {
 // BAD: Usage becomes cumbersome
 let service = BadUserService::<PostgresRepo, RedisCache, FileLogger>::new(...);
 ```
+
+## Agent Control Protocol
+
+Structured operating contract for coding agents working in this repository.
+Sections follow event → policy → action → escalation → completion semantics,
+and complement the guidelines above (which take precedence on any overlap).
+
+<project_agent_policy>
+  <behaviour>
+    Work autonomously on straightforward implementation tasks.
+    Do not stop after fixing the first issue found; continue until the task's
+    completion conditions are met.
+    Investigate before changing anything: understand the existing service and
+    infrastructure layering first.
+  </behaviour>
+  <before_editing>
+    Search for existing implementations before creating new ones; prefer
+    extending an existing service over introducing a duplicate.
+    Confirm the change respects the service guidelines above: no
+    service-to-service dependencies, no trait objects, infrastructure behind
+    a single generic parameter held as Arc<T>.
+  </before_editing>
+  <implementation>
+    Prefer the smallest fix that addresses the root cause.
+    Follow the error-management rules: anyhow::Result in services and
+    repositories, thiserror for domain errors, manual conversions only.
+    New tests follow the fixture/actual/expected pattern with
+    pretty_assertions, in the same file as the source.
+  </implementation>
+  <verification>
+    Verify with `cargo check` (fastest) and `cargo insta test --accept` for the
+    touched crates. Never run `cargo build --release` for verification.
+    Inspect `git diff` before considering work complete.
+  </verification>
+  <escalation>
+    Ask before:
+      - changing public APIs or the config schema (forge.schema.json,
+        forge.default.yaml)
+      - database schema changes or diesel migrations
+      - architectural changes to the service/infrastructure layering
+      - destructive operations, deleting significant functionality, or
+        introducing major dependencies
+    When asked to fix failing tests, always confirm whether to update the
+    implementation or the tests (per the refactoring rule above).
+  </escalation>
+  <event_response>
+    On test failure: determine whether the current change caused it; fix it if
+    the cause is local and unambiguous, otherwise report the blocker with the
+    failing output.
+    On CI failure: diagnose before acting; re-running is only a fix when the
+    job died before any test body ran. Never skip or disable a test to get green.
+    On review comments: address straightforward actionable comments directly;
+    ask before acting on architectural disagreements.
+  </event_response>
+  <completion>
+    The task is complete only when the root cause is addressed, tests and lint
+    pass for the touched crates, and the diff has been reviewed. Never report
+    completion without verifying the implementation.
+  </completion>
+</project_agent_policy>
