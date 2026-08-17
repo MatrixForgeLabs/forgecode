@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "ask": [
+      "Edit(forge.schema.json)",
+      "Edit(forge.default.yaml)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -e '.tool_input.command // \"\" | test(\"cargo\\\\s+build\\\\b[^;|&]*(--release\\\\b|\\\\s-r\\\\b)\")' >/dev/null && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"AGENTS.md policy: never use cargo build --release for verification. Use cargo check (fastest), cargo insta test --accept, or a debug cargo build.\"}}' || true",
+            "timeout": 10,
+            "statusMessage": "Checking build policy"
+          }
+        ]
+      }
+    ]
+  }
+}
